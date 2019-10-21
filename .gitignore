@@ -1,1 +1,5 @@
 pastCookies.txt
+env/
+gradeGetter.spec
+__pycache__
+build/
