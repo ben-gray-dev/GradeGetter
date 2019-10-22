@@ -98,7 +98,14 @@ In this case, the user has specified that all available classes should be analyz
 ./gradeGetter.exe -s -cs CSC -cn 400 -w gt
 ```
 
-These arguments pertain to a specific course (-s) CSC 400 and use a wilcard (-w gt) to get all CSC courses with course numbers >= 400.
+These arguments pertain to a specific course (-s) CSC 400 and use a wilcard (-w gt) to get all CSC courses with course numbers >= 400. Note that in this case since the user chose not to specify username and password in the command line arguments, they will be prompted for each during execution.
+
+
+## Additional Notes
+
+To enhance performance efficiency especially upon repeated use, the program caches the latest cookies of the user for both mypack and wolftech gradient in a text file entitled ```pastCookies.txt``` Note that this file remains local and is not a cause for a privacy concern since sessions expire after around thirty minutes. Additionally, this information is written to the file system and thus remains local and secure.
+
+In order to run the script/executable, the application must be run in the same directory of the custom chromedriver.exe binary which is included in the repository. Attempting to run the application without this executable or using a different chromedriver may not function as expected.
 
 
 
