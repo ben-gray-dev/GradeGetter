@@ -12,6 +12,7 @@ import requests
 import json
 import re
 import argparse
+from getpass import getpass
 instructorList = set()
 foundProfs = set()
 
@@ -297,8 +298,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     group = parser.add_mutually_exclusive_group(required=True)
-    parser.add_argument("-u", "--username", help="User name (unity ID)", required=True)
-    parser.add_argument("-p", "--password", help="Password", required=True)
+    parser.add_argument("-u", "--username", help="User name (unity ID)")
+    parser.add_argument("-p", "--password", help="Password")
     group.add_argument("-r", "--requirement", help="Degree audit requirement number", type=int)
     group.add_argument("-a", "--all_classes", help="flag to get all classes for ranking", action='store_true', default=False)
     parser.add_argument("-o", "--online_only", help="flag to get only online classes for ranking", action='store_true', default=False)
@@ -312,6 +313,14 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+
+
+    if args.username is None:
+        args.username = input('Username (Unity ID): ')
+
+
+    if args.password is None:
+        args.password = getpass()
     if args.specific_class and (args.course_subject is None or args.course_number is None):
         parser.error("--specific_class requires --course_subject and --course_number.")
 
