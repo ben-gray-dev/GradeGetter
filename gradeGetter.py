@@ -13,7 +13,8 @@ import json
 import re
 import argparse
 from getpass import getpass
-import chromedriver_autoinstaller
+import os
+from sys import platform
 
 instructorList = set()
 foundProfs = set()
@@ -291,13 +292,12 @@ def getSession():
     options.add_argument("--window-size=1920x1080")
     options.add_argument("--headless")
     options.add_experimental_option('excludeSwitches', ['enable-logging'])
-
-    chromedriver_autoinstaller.install()
-    # if os.name == 'nt':
-    #     driver = webdriver.Chrome(chrome_options=options,executable_path="chromedriver.exe")
-    # else:
-    #     driver = webdriver.Chrome(chrome_options=options,executable_path="./chromedriverlin")
-    driver = webdriver.Chrome(chrome_options=options)
+    if platform == 'win32':
+        driver = webdriver.Chrome(chrome_options=options,executable_path="chromedriver.exe")
+    elif platform == 'darwin':
+        driver = webdriver.Chrome(chrome_options=options,executable_path="./chromedrivermac")
+    else:
+        driver = webdriver.Chrome(chrome_options=options,executable_path="./chromedriverlin")
     gradientCookie, myPackCookie = grabCookies(driver, args.username, args.password)
     driver.quit()
 
