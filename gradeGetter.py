@@ -20,9 +20,10 @@ instructorList = set()
 foundProfs = set()
 
 
-geps = {'GK':14287, 'HUM' : 14281, 'SS': 14282, 'VPA': 15985, 'IDP': 33269,'USD': 14286  }
+geps = {'gk':14287, 'hum' : 14281, 'ss': 14282, 'vpa': 15985, 'idp': 33269,'usd': 14286  }
 gradientCookie = ""
 myPackCookie = ""
+addToCart = False
 def waitAndClickCSS(css_selector, timeout, driver):
     try:
         element = WebDriverWait(driver, timeout).until(
@@ -215,6 +216,10 @@ def scoutClasses(classList):
         if (checkClassFit(classDets[0], classDets[1])):
             runningList = findBestClass(runningList, [classC], instructorList)    
     printClassRanks(runningList)
+    if (len(runningList) != 0 and addToCart):
+        courseInfo = runningList[0][0].split('*')
+        subNum = re.split('(\d+)', courseInfo[1])
+        addCourseToShoppingCart(subNum[0], subNum[1], courseInfo[0])
 
 def lookUpFromDegreeAudit(ReqNum):
     r = requests.get("https://cs92prd.acs.ncsu.edu/psc/CS92PRD_34/EMPLOYEE/NCSIS/s/WEBLIB_DEGAUDIT.ISCRIPT1.FieldFormula.IScript_getRequirementList?requirement=0000" + str(ReqNum) + "&isExcReq=",
@@ -278,12 +283,26 @@ def getAllClasses(nonGrad, onlineOnly, minUnits, *args):
     return potentials
               
 def getGEPClasses(*args):
-    argList = list(args)
+    argList = list(args)[0]
     resulList = lookUpFromDegreeAudit(geps[argList[0]])
     del argList[0]
     for i in argList:
          resulList = list(set(resulList).intersection(lookUpFromDegreeAudit(geps[i])))
-    return resulList     
+    return resulList
+
+
+def addCourseToShoppingCart(courseSubject, courseNumber, instrutorName):
+    classInfoJSON = requests.get("https://cs92prd.acs.ncsu.edu/psc/CS92PRD_15/EMPLOYEE/NCSIS/s/WEBLIB_ENROLL.ISCRIPT1.FieldFormula.IScript_getClassSearchResults?subject=" + courseSubject + "&catalogNbrOpt=E&catalogNbr=" + courseNumber + "&instructorName=" + instrutorName + "&filterCareer=&filterLocation=&filterGEP=&filterSession=&filterOpenSectionsOnly=1&filterFitCalendar=1",     
+        headers = {"Cookie": myPackCookie}).json()
+    
+    courseData = classInfoJSON['data'][0]['add_to_cart_data'][0]
+
+    addedToCartResponseJSON = requests.get("https://cs92prd.acs.ncsu.edu/psc/CS92PRD_15/EMPLOYEE/NCSIS/s/WEBLIB_ENROLL.ISCRIPT1.FieldFormula.IScript_addClassToShopCart?course_career=" + courseData['course_career'] + "&crse_id=" + courseData['crse_id']+ "&class_nbr=" + courseData['class_nbr'] + "&catalog_nbr=" + courseData['class_nbr'] + "&unt_taken=" + courseData['unt_taken'] + "&grading_basis=" + courseData['grading_basis'] + "&rqmnt_designtn=&wait_list_okay=N",
+        headers = {"Cookie": myPackCookie}).json()
+    if (addedToCartResponseJSON['status'] == 'success'):
+        print('Course %s %s taught by %s successfully added to shopping cart.' % (courseSubject, courseNumber, instrutorName))
+    else:
+        print('Error adding Course %s %s taught by %s to shopping cart.' % (courseSubject, courseNumber, instrutorName))
 
 def getSession():
     global gradientCookie
@@ -310,6 +329,7 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--password", help="Password")
     group.add_argument("-r", "--requirement", help="Degree audit requirement number", type=int)
     group.add_argument("-a", "--all_classes", help="flag to get all classes for ranking", action='store_true', default=False)
+    group.add_argument("-gep", "--gep_requirement", nargs='+', choices=['gk', 'hum', 'ss', 'vpa', 'idp', 'usd'], help="gep requirement(s) to satisfy", type=str.lower)
     parser.add_argument("-o", "--online_only", help="flag to get only online classes for ranking", action='store_true', default=False)
     parser.add_argument("-ng", "--non_grad", help="flag to get only non graduate-level classes for ranking", action='store_true', default=True)
     parser.add_argument("-m", "--min_units", help="flag to get only online classes for ranking", type=int, default=1)
@@ -317,11 +337,13 @@ if __name__ == '__main__':
     parser.add_argument("-cs", "--course_subject", help="subject of a specific course (string)", type=str.upper)
     parser.add_argument("-cn", "--course_number", help="subject of a specific course (string)", type=int)
     parser.add_argument("-w", "--wildcard", choices=['lt', 'gt'], help="wild card search with specific course information", type=str.lower)
+    parser.add_argument("-atc", "--add_to_cart", help="flag to add the top course found automatically to your mypack enrollment wizard", action='store_true', default=False)
 
 
     args = parser.parse_args()
 
-
+    if args.add_to_cart:
+        addToCart = True
 
     if args.username is None:
         args.username = input('Username (Unity ID): ')
@@ -357,6 +379,8 @@ if __name__ == '__main__':
                     scoutClasses(getAllClasses(None, None, None, args.course_subject, args.course_number, args.wildcard))
                 else:
                     scoutClasses([args.course_subject + " " + str(args.course_number)])
+            elif args.gep_requirement:
+                scoutClasses(getGEPClasses(args.gep_requirement))
             completed = True
         except:
             print("================== Session not working or expired, obtaining new session ===============")
